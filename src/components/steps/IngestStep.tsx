@@ -52,6 +52,9 @@ export function IngestStep() {
           } catch (error) {
             console.warn('Thumbnail generation failed', error);
           }
+          if (!image.thumbnailUrl) {
+            image.thumbnailUrl = image.objectUrl;
+          }
         })
       );
 
