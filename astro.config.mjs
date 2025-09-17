@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://tohu-sand.github.io/Bluesky-comic-uploader/',
+  base: '/Bluesky-comic-uploader',
   output: 'static',
   prefetch: true,
   integrations: [react()],
@@ -21,6 +23,9 @@ export default defineConfig({
         '@styles': '/src/styles',
         '@utils': '/src/modules/utils'
       }
+    },
+    optimizeDeps: {
+      disabled: true
     }
   }
 });
