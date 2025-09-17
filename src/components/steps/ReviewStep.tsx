@@ -1,14 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '@stores/appStore';
 import { Button } from '@components/ui/Button';
-import { putSchedulerEntry, listSchedulerEntries } from '@modules/scheduler/storage';
-import type { SchedulerEntry, ScheduledGroup, ScheduledImage, ComicImage } from '@modules/types';
+import clsx from 'clsx';
 
 export function ReviewStep() {
-  const { postPlan, firstPostText, schedulerEntries, actions } = useAppStore();
-  const [scheduleAt, setScheduleAt] = useState<string>('');
-  const [scheduling, setScheduling] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const {
+    postPlan,
+    schedulerEnabled,
+    scheduledAt,
+    actions
+  } = useAppStore();
 
   const entries = postPlan?.entries ?? [];
 
@@ -19,41 +20,6 @@ export function ReviewStep() {
       imageNames: entry.images.map((image) => image.name)
     }))
   ), [entries]);
-
-  const scheduleEnabled = Boolean(scheduleAt);
-
-  const handleSchedule = async () => {
-    if (!postPlan || !scheduleEnabled) {
-      setMessage('予約時刻を指定してください');
-      return;
-    }
-    setScheduling(true);
-    setMessage(null);
-    try {
-      const scheduledGroups: ScheduledGroup[] = await Promise.all(
-        postPlan.entries.map(async (entry) => ({
-          id: entry.id,
-          text: entry.text,
-          images: await Promise.all(entry.images.map(async (image) => toScheduledImage(image)))
-        }))
-      );
-      const entry: SchedulerEntry = {
-        id: crypto.randomUUID(),
-        title: firstPostText || `Scheduled thread ${new Date().toLocaleString()}`,
-        createdAt: Date.now(),
-        scheduledAt: new Date(scheduleAt).getTime(),
-        groups: scheduledGroups
-      };
-      await putSchedulerEntry(entry);
-      const all = await listSchedulerEntries();
-      actions.setSchedulerEntries(all);
-      setMessage('予約キューに追加しました。タブを開いたままにすると指定時刻に投稿されます。');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-    } finally {
-      setScheduling(false);
-    }
-  };
 
   return (
     <section className="space-y-6">
@@ -86,37 +52,43 @@ export function ReviewStep() {
       </div>
 
       <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-sm text-slate-200">
-        <p className="mb-3 text-xs uppercase tracking-wide text-slate-400">予約投稿（タブを閉じると無効）</p>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <input
-            type="datetime-local"
-            value={scheduleAt}
-            onChange={(event) => setScheduleAt(event.target.value)}
-            className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-sky-400 focus:outline-none"
-            min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
-          />
-          <Button type="button" variant="secondary" onClick={handleSchedule} disabled={!scheduleEnabled || scheduling}>
-            予約キューに追加
-          </Button>
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-wide text-slate-400">予約投稿</p>
+          <label className="flex items-center gap-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={schedulerEnabled}
+              onChange={(event) => {
+                const enabled = event.target.checked;
+                actions.setSchedulerEnabled(enabled);
+                if (!enabled) {
+                  actions.setScheduledAt(null);
+                }
+              }}
+              className="h-4 w-4 rounded border-slate-600 bg-slate-950 text-sky-500"
+            />
+            <span>予約投稿を有効にする</span>
+          </label>
         </div>
-        <p className="mt-2 text-xs text-slate-500">
-          予約はブラウザタブが開いている間のみ有効です。PWAとしてインストールすると継続しやすくなります。
-        </p>
-        {schedulerEntries.length > 0 && (
-          <div className="mt-4 space-y-2 text-xs text-slate-400">
-            <p className="uppercase tracking-wide text-slate-500">待機中の予約</p>
-            <ul className="space-y-1">
-              {schedulerEntries.map((entry) => (
-                <li key={entry.id} className="rounded-md bg-slate-950/50 px-3 py-2">
-                  {new Date(entry.scheduledAt).toLocaleString()} — {entry.title}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <div className={clsx('mt-4 grid gap-3 transition-opacity', schedulerEnabled ? 'opacity-100' : 'opacity-60')}
+          aria-disabled={!schedulerEnabled}
+        >
+          <label className="grid gap-1">
+            <span className="text-xs uppercase tracking-wide text-slate-400">投稿予定時刻</span>
+            <input
+              type="datetime-local"
+              value={scheduledAt ?? ''}
+              onChange={(event) => actions.setScheduledAt(event.target.value)}
+              disabled={!schedulerEnabled}
+              className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-sky-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
+            />
+          </label>
+          <p className="text-xs text-slate-500">
+            予約が有効な場合、次のステップで「即時投稿を開始」を押すとキューに登録され、指定時刻に自動投稿されます（タブ/PWAを開き続ける必要があります）。
+          </p>
+        </div>
       </div>
-
-      {message && <p className="text-sm text-sky-300">{message}</p>}
 
       <div className="flex items-center justify-between">
         <Button variant="secondary" onClick={() => actions.setStep('compose')}>
@@ -128,15 +100,4 @@ export function ReviewStep() {
       </div>
     </section>
   );
-}
-
-async function toScheduledImage(image: ComicImage): Promise<ScheduledImage> {
-  return {
-    id: image.id,
-    name: image.name,
-    type: image.type,
-    size: image.size,
-    altText: image.altText,
-    fileData: image.file
-  };
 }

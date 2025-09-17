@@ -83,7 +83,7 @@ export function IngestStep() {
       <header className="space-y-2">
         <h2 className="text-2xl font-semibold text-slate-50">画像を取り込む</h2>
         <p className="text-sm text-slate-400">
-          フォルダごとドラッグ＆ドロップ、またはファイルを選択してください。ファイル名の連番を解析して自動的に並べ替えます。
+          CLIP STUDIO PAINT（クリスタ）でPNG出力したフォルダ/ファイルをドラッグ＆ドロップ、またはフォルダを選択してください。ファイル名の連番（例: コミック_出力_001.png）を元に並べ替えます。
         </p>
       </header>
 

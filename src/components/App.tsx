@@ -14,7 +14,7 @@ import { persistSession, loadPersistedSession, setMemorySession, clearPersistedS
 import type { AuthContext } from '@modules/auth/context';
 import { PosterService } from '@modules/poster/service';
 import { SchedulerService } from '@modules/scheduler/service';
-import { listSchedulerEntries } from '@modules/scheduler/storage';
+import { listSchedulerEntries, deleteSchedulerEntry } from '@modules/scheduler/storage';
 
 const PERSIST_KEY = 'bsky_persist_tokens';
 
@@ -89,7 +89,6 @@ export function App() {
     if (!authContext) return;
     if (!schedulerRef.current) {
       schedulerRef.current = new SchedulerService(async (entry, imageGroups) => {
-        const service = new PosterService(authContext);
         const plan = {
           entries: entry.groups.map((group, index) => ({
             id: group.id ?? String(index + 1),
@@ -99,13 +98,26 @@ export function App() {
           totalPosts: entry.groups.length,
           totalImages: imageGroups.reduce((sum, group) => sum + group.length, 0)
         };
+        const service = new PosterService(authContext);
+        actions.setSchedulerEnabled(false);
+        actions.setScheduledAt(null);
+        actions.resetProgress();
+        actions.setStep('post');
         try {
-          const result = await service.postPlan(plan);
-          console.info('Scheduled post completed', result);
+          const result = await service.postPlan(plan, {
+            onUploadProgress: (payload) => actions.updateUploadProgress(payload.imageId, payload),
+            onPostProgress: (payload) => actions.updatePostProgress(payload.postId, payload)
+          });
+          await deleteSchedulerEntry(entry.id);
           const entries = await listSchedulerEntries();
           actions.setSchedulerEntries(entries);
+          actions.setThreadResult(result);
+          actions.setStep('complete');
         } catch (error) {
           console.error('Scheduled post failed', error);
+          const entries = await listSchedulerEntries();
+          actions.setSchedulerEntries(entries);
+          actions.setStep('post');
         } finally {
           imageGroups.flat().forEach((image) => {
             URL.revokeObjectURL(image.objectUrl);

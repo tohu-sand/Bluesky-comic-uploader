@@ -112,16 +112,7 @@ export function PreviewStep() {
                     </div>
                   )}
                 </div>
-                <div className="mt-3 space-y-2 text-xs text-slate-300">
-                  <label className="grid gap-1">
-                    <span className="text-[11px] uppercase text-slate-500">ALT TEXT</span>
-                    <textarea
-                      value={image.altText}
-                      rows={2}
-                      onChange={(event) => actions.patchImage(image.id, { altText: event.target.value })}
-                      className="rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-sky-400 focus:outline-none"
-                    />
-                  </label>
+                <div className="mt-3 text-xs text-slate-300">
                   <button
                     type="button"
                     className={`w-full rounded-md border px-3 py-2 text-xs font-medium ${
@@ -141,7 +132,7 @@ export function PreviewStep() {
 
       <div className="flex items-center justify-between">
         <Button variant="secondary" onClick={() => actions.setStep('ingest')}>
-          取り込みに戻る
+          画像取り込みに戻る
         </Button>
         <Button onClick={() => actions.setStep('compose')} disabled={activeImages.length === 0}>
           投稿設定へ

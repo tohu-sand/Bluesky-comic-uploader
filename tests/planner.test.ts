@@ -18,11 +18,12 @@ describe('buildPostPlan', () => {
     const images = Array.from({ length: 9 }, (_, index) => createImage(`img-${index}`, index));
     const plan = buildPostPlan(images, {
       firstPostText: 'Hello',
-      template: '{i}/{n}',
+      template: '({i}/{n})',
       enableTemplate: true,
       fallbackText: ''
     });
     expect(plan.totalPosts).toBe(3);
+    expect(plan.entries[0]?.text).toBe('Hello\n1/3');
     expect(plan.entries[0]?.images).toHaveLength(4);
     expect(plan.entries[1]?.images).toHaveLength(4);
     expect(plan.entries[2]?.images).toHaveLength(1);
@@ -33,11 +34,23 @@ describe('buildPostPlan', () => {
     const images = [createImage('1', 0), { ...createImage('2', 1), markedForRemoval: true }];
     const plan = buildPostPlan(images, {
       firstPostText: '',
-      template: '{i}/{n}',
+      template: '({i}/{n})',
       enableTemplate: true,
       fallbackText: ''
     });
     expect(plan.totalImages).toBe(1);
     expect(plan.entries[0]?.images).toHaveLength(1);
+  });
+
+  it('does not append template to first post when template disabled', () => {
+    const images = Array.from({ length: 4 }, (_, index) => createImage(`img-${index}`, index));
+    const plan = buildPostPlan(images, {
+      firstPostText: 'Hello',
+      template: '({i}/{n})',
+      enableTemplate: false,
+      fallbackText: 'fallback'
+    });
+    expect(plan.entries[0]?.text).toBe('Hello');
+    expect(plan.entries[1]).toBeUndefined();
   });
 });

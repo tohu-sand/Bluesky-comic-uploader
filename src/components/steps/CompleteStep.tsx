@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '@stores/appStore';
 import { Button } from '@components/ui/Button';
 import { Copy } from 'lucide-react';
+import { atUriToBskyAppUrl } from '@utils/urls';
 
 export function CompleteStep() {
   const { threadResult, actions } = useAppStore();
+  const [threadLink, setThreadLink] = useState<string | null>(null);
 
   const uriList = useMemo(() => {
     if (!threadResult) return '';
@@ -15,6 +17,15 @@ export function CompleteStep() {
     if (!threadResult) return;
     await navigator.clipboard.writeText(uriList);
   };
+
+  useEffect(() => {
+    if (!threadResult?.rootUri) {
+      setThreadLink(null);
+      return;
+    }
+    const link = atUriToBskyAppUrl(threadResult.rootUri);
+    setThreadLink(link ?? threadResult.rootUri);
+  }, [threadResult]);
 
   return (
     <section className="space-y-6">
@@ -35,23 +46,20 @@ export function CompleteStep() {
           <Button variant="secondary" onClick={copyUris} disabled={!threadResult} icon={<Copy className="h-4 w-4" />}>
             URIをコピー
           </Button>
-          {threadResult && (
+          {threadResult && threadLink && (
             <a
-              href={threadResult.rootUri}
+              href={threadLink}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-md border border-sky-500 px-4 py-2 text-sm font-medium text-sky-300 hover:bg-sky-500/10"
             >
-              スレッドを開く
+              ポストを開く
             </a>
           )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <Button variant="secondary" onClick={() => actions.setStep('post')}>
-          投稿状況に戻る
-        </Button>
+      <div className="flex justify-end">
         <Button onClick={() => actions.resetApp()}>新しい投稿を作成</Button>
       </div>
     </section>

@@ -6,6 +6,7 @@ import type { DPoPKeyPair } from '@modules/auth/dpop';
 import type { OAuthConfig } from '@modules/auth/oauth';
 import type { AppPasswordSession } from '@modules/auth/appPassword';
 import { releaseComicImages } from '@modules/ingest/intake';
+import { updateAltTexts } from '@modules/editor/altText';
 
 export type WizardStep = 'auth' | 'ingest' | 'preview' | 'compose' | 'review' | 'post' | 'complete';
 
@@ -40,17 +41,17 @@ interface AppState {
   postProgress: Record<string, PostStatus>;
   schedulerEntries: SchedulerEntry[];
   schedulerEnabled: boolean;
+  scheduledAt: string | null;
   actions: {
     setStep: (step: WizardStep) => void;
     setSession: (session: OAuthSession | null, keyPair?: DPoPKeyPair | null, config?: OAuthConfig | null) => void;
     setAppPasswordSession: (session: AppPasswordSession | null) => void;
     setImages: (images: ComicImage[]) => void;
-    patchImage: (id: string, patch: Partial<ComicImage>) => void;
     markImagesRemoved: (ids: string[], removed: boolean) => void;
     setFirstPostText: (text: string) => void;
     setTemplate: (template: string, enabled: boolean) => void;
     setFallbackBody: (text: string) => void;
-    setAltTemplate: (template: string, enabled: boolean) => void;
+    setAltTemplate: (template: string, enabled?: boolean) => void;
     rebuildPlan: () => void;
     buildPlanWithOptions: (options: Partial<PlanOptions>) => void;
     setThreadResult: (result: ThreadResult | null) => void;
@@ -59,11 +60,13 @@ interface AppState {
     updatePostProgress: (postId: string, status: PostStatus) => void;
     setSchedulerEntries: (entries: SchedulerEntry[]) => void;
     setSchedulerEnabled: (value: boolean) => void;
+    setScheduledAt: (value: string | null) => void;
     resetApp: () => void;
   };
 }
 
 const defaultAltTemplate = 'Page {i} of {n}';
+const fallbackAltTemplate = 'Page {i}';
 
 export const useAppStore = create<AppState>((set, get) => ({
   step: 'auth',
@@ -74,8 +77,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   images: [],
   postPlan: null,
   firstPostText: '',
-  template: '{i}/{n}',
-  templateEnabled: false,
+  template: '({i}/{n})',
+  templateEnabled: true,
   fallbackBody: '',
   altTemplate: defaultAltTemplate,
   altTemplateEnabled: true,
@@ -84,6 +87,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   postProgress: {},
   schedulerEntries: [],
   schedulerEnabled: false,
+  scheduledAt: null,
   actions: {
     setStep(step) {
       set({ step });
@@ -100,14 +104,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ appPasswordSession: session, session: null, dpopKeyPair: null });
     },
     setImages(images) {
-      set({ images });
+      set((state) => {
+        const nextImages = images.map((image) => ({ ...image }));
+        const templateToApply = state.altTemplateEnabled ? state.altTemplate : fallbackAltTemplate;
+        updateAltTexts(nextImages, templateToApply);
+        return { images: nextImages };
+      });
       const { actions } = get();
       actions.rebuildPlan();
-    },
-    patchImage(id, patch) {
-      set((state) => ({
-        images: state.images.map((image) => (image.id === id ? { ...image, ...patch } : image))
-      }));
     },
     markImagesRemoved(ids, removed) {
       set((state) => ({
@@ -132,7 +136,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       actions.rebuildPlan();
     },
     setAltTemplate(template, enabled) {
-      set({ altTemplate: template, altTemplateEnabled: enabled });
+      set((state) => {
+        const nextEnabled = enabled ?? state.altTemplateEnabled;
+        if (state.images.length === 0) {
+          return {
+            altTemplate: template,
+            altTemplateEnabled: nextEnabled
+          };
+        }
+        const nextImages = state.images.map((image) => ({ ...image }));
+        const templateToApply = nextEnabled ? template : fallbackAltTemplate;
+        updateAltTexts(nextImages, templateToApply);
+        return {
+          images: nextImages,
+          altTemplate: template,
+          altTemplateEnabled: nextEnabled
+        };
+      });
     },
     rebuildPlan() {
       const state = get();
@@ -185,7 +205,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ schedulerEntries: entries });
     },
     setSchedulerEnabled(value) {
-      set({ schedulerEnabled: value });
+      set((state) => ({
+        schedulerEnabled: value,
+        scheduledAt: value ? state.scheduledAt : null
+      }));
+    },
+    setScheduledAt(value) {
+      set({ scheduledAt: value });
     },
     resetApp() {
       set((state) => {
@@ -201,13 +227,16 @@ export const useAppStore = create<AppState>((set, get) => ({
           postProgress: {},
           firstPostText: '',
           fallbackBody: '',
-          template: '{i}/{n}',
-          templateEnabled: false,
+          template: '({i}/{n})',
+          templateEnabled: true,
           altTemplate: defaultAltTemplate,
           altTemplateEnabled: true,
           session: null,
           dpopKeyPair: null,
-          appPasswordSession: null
+          appPasswordSession: null,
+          schedulerEntries: [],
+          schedulerEnabled: false,
+          scheduledAt: null
         };
       });
     }
