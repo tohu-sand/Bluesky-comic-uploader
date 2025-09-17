@@ -23,11 +23,11 @@ describe('buildPostPlan', () => {
       fallbackText: ''
     });
     expect(plan.totalPosts).toBe(3);
-    expect(plan.entries[0]?.text).toBe('Hello\n1/3');
+    expect(plan.entries[0]?.text).toBe('Hello\n(1/3)');
     expect(plan.entries[0]?.images).toHaveLength(4);
     expect(plan.entries[1]?.images).toHaveLength(4);
     expect(plan.entries[2]?.images).toHaveLength(1);
-    expect(plan.entries[1]?.text).toBe('2/3');
+    expect(plan.entries[1]?.text).toBe('(2/3)');
   });
 
   it('skips removed images', () => {

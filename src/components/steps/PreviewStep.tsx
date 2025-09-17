@@ -100,9 +100,9 @@ export function PreviewStep() {
                   {image.blankCandidate && <span className="text-amber-300">白紙候補</span>}
                 </div>
                 <div className="flex justify-center">
-                  {image.thumbnailUrl ? (
+                  {image.thumbnailUrl || image.objectUrl ? (
                     <img
-                      src={image.thumbnailUrl}
+                      src={image.thumbnailUrl ?? image.objectUrl}
                       alt={image.altText}
                       className={`max-h-48 rounded-md border ${isRemoved ? 'border-rose-400/70 opacity-50' : 'border-slate-800'}`}
                     />
