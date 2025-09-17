@@ -1,0 +1,17 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+	"files": {
+		"includes": ["**", "!**/dist", "!**/.astro", "!**/node_modules"]
+	},
+	"formatter": {
+		"indentWidth": 2,
+		"lineWidth": 120
+	},
+	"linter": {
+		"rules": {
+			"style": {
+				"useImportType": "warn"
+			}
+		}
+	}
+}

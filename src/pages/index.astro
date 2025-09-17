@@ -1,0 +1,12 @@
+---
+// biome-ignore lint/correctness/noUnusedImports: used in Astro template
+import AppLayout from '@layouts/AppLayout.astro';
+// biome-ignore lint/correctness/noUnusedImports: used in Astro template
+import { App } from '@components/App';
+---
+
+<AppLayout title="Bluesky Comic Uploader">
+  <section class="mx-auto max-w-6xl px-4 py-8">
+    <App client:load />
+  </section>
+</AppLayout>

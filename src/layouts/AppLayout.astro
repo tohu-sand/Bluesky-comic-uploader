@@ -1,0 +1,27 @@
+---
+import '@styles/global.css';
+interface Props {
+  title?: string;
+  description?: string;
+}
+// biome-ignore lint/correctness/noUnusedVariables: referenced in template markup
+const props = Astro.props as Props;
+---
+<html lang="ja" class="bg-slate-950 text-slate-100">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={props.description ?? 'Client-side tool for preparing and posting comic threads to Bluesky.'} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{props.title ?? 'Bluesky Comic Uploader'}</title>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:inset-x-0 focus:top-2 focus:z-50 focus:mx-auto focus:w-fit focus:rounded focus:bg-slate-100 focus:px-3 focus:py-2 focus:text-slate-900">
+      コンテンツへスキップ
+    </a>
+    <main id="main" class="min-h-screen">
+      <slot />
+    </main>
+  </body>
+</html>
