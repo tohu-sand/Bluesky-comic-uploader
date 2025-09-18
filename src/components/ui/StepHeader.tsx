@@ -1,8 +1,9 @@
 import type { WizardStep } from '@stores/appStore';
 import clsx from 'clsx';
 
-const STEP_ORDER: WizardStep[] = ['auth', 'ingest', 'preview', 'compose', 'review', 'post', 'complete'];
+const STEP_ORDER: WizardStep[] = ['intro', 'auth', 'ingest', 'preview', 'compose', 'review', 'post', 'complete'];
 const STEP_LABELS: Record<WizardStep, string> = {
+  intro: 'はじめに',
   auth: 'ログイン',
   ingest: '画像取り込み',
   preview: 'プレビュー',

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { StepHeader } from '@components/ui/StepHeader';
 import { Button } from '@components/ui/Button';
+import { IntroStep } from '@components/steps/IntroStep';
 import { AuthStep } from '@components/steps/AuthStep';
 import { IngestStep } from '@components/steps/IngestStep';
 import { PreviewStep } from '@components/steps/PreviewStep';
@@ -156,6 +157,8 @@ export function App() {
 
 function renderStep(step: WizardStep) {
   switch (step) {
+    case 'intro':
+      return <IntroStep />;
     case 'auth':
       return <AuthStep />;
     case 'ingest':

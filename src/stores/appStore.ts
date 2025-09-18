@@ -9,7 +9,7 @@ import type { AppPasswordSession } from '@modules/auth/appPassword';
 import { releaseComicImages } from '@modules/ingest/intake';
 import { updateAltTexts } from '@modules/editor/altText';
 
-export type WizardStep = 'auth' | 'ingest' | 'preview' | 'compose' | 'review' | 'post' | 'complete';
+export type WizardStep = 'intro' | 'auth' | 'ingest' | 'preview' | 'compose' | 'review' | 'post' | 'complete';
 
 interface UploadStatus {
   status: 'uploading' | 'success' | 'error';
@@ -72,7 +72,7 @@ const defaultAltTemplate = 'Page {i} of {n}';
 const fallbackAltTemplate = 'Page {i}';
 
 export const useAppStore = create<AppState>((set, get) => ({
-  step: 'auth',
+  step: 'intro',
   session: null,
   dpopKeyPair: null,
   appPasswordSession: null,
@@ -226,7 +226,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           releaseComicImages(state.images);
         }
         return {
-          step: 'auth',
+          step: 'intro',
           images: [],
           postPlan: null,
           threadResult: null,
