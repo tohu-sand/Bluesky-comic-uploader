@@ -7,6 +7,7 @@ interface Props {
 // biome-ignore lint/correctness/noUnusedVariables: referenced in template markup
 const props = Astro.props as Props;
 const currentYear = new Date().getFullYear();
+const baseHref = new URL(import.meta.env.BASE_URL ?? '/', Astro.url).toString();
 ---
 <html lang="ja" class="bg-slate-950 text-slate-100">
   <head>
@@ -23,7 +24,7 @@ const currentYear = new Date().getFullYear();
     </a>
     <header class="border-b border-slate-800 bg-slate-950/90">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <a href="/" class="text-lg font-semibold tracking-tight">
+        <a href={baseHref} class="text-lg font-semibold tracking-tight">
           Bluesky Comic Uploader
         </a>
       </div>
