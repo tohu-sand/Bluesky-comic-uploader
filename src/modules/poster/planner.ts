@@ -1,3 +1,4 @@
+import { RichText } from '@atproto/api';
 import type { ComicImage, PostPlan } from '@modules/types';
 import { chunkArray } from '@utils/chunk';
 
@@ -34,10 +35,12 @@ export function buildPostPlan(images: ComicImage[], options: PlanOptions): PostP
     } else {
       text = templatedText;
     }
+    const { text: normalizedText, facets } = analyzeText(text);
     return {
       id: `${index + 1}`,
-      text,
-      images: group
+      text: normalizedText,
+      images: group,
+      ...(facets ? { facets } : {})
     };
   });
 
@@ -45,6 +48,18 @@ export function buildPostPlan(images: ComicImage[], options: PlanOptions): PostP
     entries,
     totalPosts,
     totalImages: usable.length
+  };
+}
+
+function analyzeText(text: string) {
+  if (!text) {
+    return { text: '', facets: undefined };
+  }
+  const richText = new RichText({ text });
+  richText.detectFacetsWithoutResolution();
+  return {
+    text: richText.text,
+    facets: richText.facets?.length ? richText.facets : undefined
   };
 }
 

@@ -1,3 +1,5 @@
+import type { AppBskyRichtextFacet } from '@atproto/api';
+
 export interface ComicImage {
   id: string;
   file: File;
@@ -27,6 +29,7 @@ export interface PostPlanEntry {
   id: string;
   text: string;
   images: ComicImage[];
+  facets?: AppBskyRichtextFacet.Main[];
 }
 
 export interface PostPlan {

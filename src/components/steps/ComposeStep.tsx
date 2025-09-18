@@ -22,6 +22,40 @@ export function ComposeStep() {
     };
   }, [postPlan]);
 
+  const facetPresence = useMemo(() => {
+    if (!postPlan) {
+      return { hasHashtag: false, hasUrl: false };
+    }
+    let hasHashtag = false;
+    let hasUrl = false;
+    for (const entry of postPlan.entries) {
+      for (const facet of entry.facets ?? []) {
+        for (const feature of facet.features) {
+          if (feature.$type === 'app.bsky.richtext.facet#tag') {
+            hasHashtag = true;
+          } else if (feature.$type === 'app.bsky.richtext.facet#link') {
+            hasUrl = true;
+          }
+          if (hasHashtag && hasUrl) {
+            return { hasHashtag, hasUrl };
+          }
+        }
+      }
+    }
+    return { hasHashtag, hasUrl };
+  }, [postPlan]);
+
+  const detectedFacetMessage = useMemo(() => {
+    if (!facetPresence.hasHashtag && !facetPresence.hasUrl) {
+      return null;
+    }
+    const labels = [
+      facetPresence.hasHashtag ? 'ハッシュタグ' : null,
+      facetPresence.hasUrl ? 'URL' : null
+    ].filter(Boolean).join('と');
+    return `${labels}を検出しました。投稿時に自動的にリンク化されます。`;
+  }, [facetPresence.hasHashtag, facetPresence.hasUrl]);
+
   return (
     <section className="space-y-6">
       <header className="space-y-2">
@@ -42,6 +76,12 @@ export function ComposeStep() {
             placeholder="タイトルや概要、タグなどを入力"
           />
         </label>
+
+        {detectedFacetMessage && (
+          <p className="rounded-md border border-slate-700 bg-slate-950/40 px-3 py-2 text-xs text-slate-300">
+            {detectedFacetMessage}
+          </p>
+        )}
 
         <div className="grid gap-4 rounded-md bg-slate-950/40 p-4">
           <div className="flex items-center justify-between">

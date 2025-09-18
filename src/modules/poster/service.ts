@@ -100,6 +100,7 @@ export class PosterService {
             $type: 'app.bsky.feed.post',
             text: entry.text ?? '',
             createdAt: new Date().toISOString(),
+            ...(entry.facets?.length ? { facets: entry.facets } : {}),
             embed: {
               $type: 'app.bsky.embed.images',
               images: embeds

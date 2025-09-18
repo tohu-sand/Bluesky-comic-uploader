@@ -53,4 +53,21 @@ describe('buildPostPlan', () => {
     expect(plan.entries[0]?.text).toBe('Hello');
     expect(plan.entries[1]).toBeUndefined();
   });
+
+  it('adds facets for hashtags and URLs', () => {
+    const images = [createImage('1', 0)];
+    const plan = buildPostPlan(images, {
+      firstPostText: 'Check this out #sample https://example.com',
+      template: '',
+      enableTemplate: false,
+      fallbackText: ''
+    });
+    const features = plan.entries[0]?.facets?.flatMap((facet) => facet.features) ?? [];
+    expect(features).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ $type: 'app.bsky.richtext.facet#tag', tag: 'sample' }),
+        expect.objectContaining({ $type: 'app.bsky.richtext.facet#link', uri: 'https://example.com' })
+      ])
+    );
+  });
 });

@@ -10,7 +10,7 @@
 - テキスト／ALTテンプレート、白紙候補検出、ブラウザ内予約投稿
 
 ## 使い方
-1. CLIP STUDIO PAINT（クリスタ）クリップスタジオでPNG一括出力（例: manga_001.png, manga_002.png...）
+1. CLIP STUDIO PAINT（クリスタ）でPNG一括出力（例: manga_001.png, manga_002.png...）
 2. PDS URL・ハンドル/DID・App Passwordを入力してログイン
 3. 画像をドラッグ＆ドロップし、不要ページを除外
 4. 本文・テンプレートを調整し、最終確認で構成と予約設定を確認
