@@ -17,7 +17,14 @@ export function ReviewStep() {
     entries.map((entry) => ({
       id: entry.id,
       text: entry.text,
-      imageNames: entry.images.map((image) => image.name)
+      imageNames: entry.images.map((image) => image.name),
+      images: entry.images.map((image) => ({
+        id: image.id,
+        index: image.index,
+        name: image.name,
+        displayUrl: image.thumbnailUrl ?? image.objectUrl,
+        altText: image.altText || image.name
+      }))
     }))
   ), [entries]);
 
@@ -38,9 +45,41 @@ export function ReviewStep() {
                 <p className="whitespace-pre-wrap text-sm text-slate-100">
                   {entry.text ? entry.text : <span className="text-slate-500">（本文なし）</span>}
                 </p>
-                <p className="mt-3 text-xs text-slate-500">
-                  画像: {entry.imageNames.join(', ')}
-                </p>
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs uppercase tracking-wide text-slate-400">画像</p>
+                  <ul className="flex flex-wrap gap-2">
+                    {entry.images.length > 0 ? (
+                      entry.images.map((image) => (
+                        <li
+                          key={image.id}
+                          className="relative h-16 w-16 overflow-hidden rounded-md border border-slate-800 bg-slate-950/80"
+                        >
+                          {image.displayUrl ? (
+                            <img
+                              src={image.displayUrl}
+                              alt={image.altText}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-500">
+                              No preview
+                            </div>
+                          )}
+                          <span className="absolute bottom-1 left-1 rounded bg-slate-900/80 px-1 text-[10px] font-mono text-slate-200">
+                            #{image.index + 1}
+                          </span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-xs text-slate-500">画像がありません</li>
+                    )}
+                  </ul>
+                  {entry.imageNames.length > 0 && (
+                    <p className="truncate text-xs text-slate-500" title={entry.imageNames.join(', ')}>
+                      {entry.imageNames.join(', ')}
+                    </p>
+                  )}
+                </div>
               </li>
             ))
           ) : (
