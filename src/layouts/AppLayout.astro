@@ -6,6 +6,7 @@ interface Props {
 }
 // biome-ignore lint/correctness/noUnusedVariables: referenced in template markup
 const props = Astro.props as Props;
+const currentYear = new Date().getFullYear();
 ---
 <html lang="ja" class="bg-slate-950 text-slate-100">
   <head>
@@ -16,12 +17,24 @@ const props = Astro.props as Props;
     <meta name="generator" content={Astro.generator} />
     <title>{props.title ?? 'Bluesky Comic Uploader'}</title>
   </head>
-  <body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
+  <body class="flex min-h-screen flex-col bg-slate-950 text-slate-100 antialiased">
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:inset-x-0 focus:top-2 focus:z-50 focus:mx-auto focus:w-fit focus:rounded focus:bg-slate-100 focus:px-3 focus:py-2 focus:text-slate-900">
       コンテンツへスキップ
     </a>
-    <main id="main" class="min-h-screen">
+    <header class="border-b border-slate-800 bg-slate-950/90">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <a href="/" class="text-lg font-semibold tracking-tight">
+          Bluesky Comic Uploader
+        </a>
+      </div>
+    </header>
+    <main id="main" class="flex-1">
       <slot />
     </main>
+    <footer class="border-t border-slate-800 bg-slate-950/90">
+      <div class="mx-auto max-w-6xl px-4 py-6 text-center text-sm text-slate-400">
+        © {currentYear} tohu_sand
+      </div>
+    </footer>
   </body>
 </html>
