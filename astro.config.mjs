@@ -23,9 +23,6 @@ export default defineConfig({
         '@styles': '/src/styles',
         '@utils': '/src/modules/utils'
       }
-    },
-    optimizeDeps: {
-      disabled: true
     }
   }
 });
