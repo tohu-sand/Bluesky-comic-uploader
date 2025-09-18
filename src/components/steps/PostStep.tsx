@@ -14,6 +14,7 @@ export function PostStep() {
     session,
     dpopKeyPair,
     appPasswordSession,
+    compressionMode,
     uploadProgress,
     postProgress,
     schedulerEnabled,
@@ -90,6 +91,7 @@ export function PostStep() {
 
     try {
       const result = await service.postPlan(postPlan, {
+        compressionMode,
         onUploadProgress: (payload) => actions.updateUploadProgress(payload.imageId, payload),
         onPostProgress: (payload) => actions.updatePostProgress(payload.postId, payload)
       });

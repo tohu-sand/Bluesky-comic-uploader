@@ -1,12 +1,45 @@
 import type { ComicImage, PostPlan, ThreadResult } from '@modules/types';
-import { compressImageIfNeeded } from '@modules/ingest/compression';
-import { createFeedPost, uploadImageBlob } from './api';
+import { compressImageIfNeeded, DEFAULT_MAX_BYTES, type CompressionMode } from '@modules/ingest/compression';
 import { createSemaphore } from '@utils/promise';
 import type { AuthContext } from '@modules/auth/context';
+import { createFeedPost, uploadImageBlob } from './api';
+
+function greatestCommonDivisor(a: number, b: number): number {
+  let x = Math.abs(a);
+  let y = Math.abs(b);
+  while (y !== 0) {
+    const temp = y;
+    y = x % y;
+    x = temp;
+  }
+  return x || 1;
+}
+
+function computeAspectRatio(image: ComicImage) {
+  const { width, height } = image;
+  if (!width || !height) {
+    return undefined;
+  }
+  const roundedWidth = Math.round(width);
+  const roundedHeight = Math.round(height);
+  if (!Number.isFinite(roundedWidth) || !Number.isFinite(roundedHeight)) {
+    return undefined;
+  }
+  if (roundedWidth <= 0 || roundedHeight <= 0) {
+    return undefined;
+  }
+
+  const divisor = greatestCommonDivisor(roundedWidth, roundedHeight);
+  return {
+    width: Math.max(1, roundedWidth / divisor),
+    height: Math.max(1, roundedHeight / divisor)
+  };
+}
 
 export interface PosterOptions {
   concurrency?: number;
   maxUploadBytes?: number;
+  compressionMode?: CompressionMode;
   signal?: AbortSignal;
   onUploadProgress?: (payload: {
     imageId: string;
@@ -52,9 +85,11 @@ export class PosterService {
           if (!upload) {
             throw new Error(`Missing uploaded blob for image ${image.id}`);
           }
+          const aspectRatio = computeAspectRatio(upload.image);
           return {
             alt: image.altText,
-            image: upload.blobRef
+            image: upload.blobRef,
+            ...(aspectRatio ? { aspectRatio } : {})
           };
         });
 
@@ -114,7 +149,8 @@ export class PosterService {
 
   private async uploadAllImages(images: ComicImage[], options: PosterOptions) {
     const concurrency = options.concurrency ?? 3;
-    const maxBytes = options.maxUploadBytes ?? 900_000;
+    const maxBytes = options.maxUploadBytes ?? DEFAULT_MAX_BYTES;
+    const compressionMode = options.compressionMode ?? 'balanced';
     const semaphore = createSemaphore(concurrency);
     const uploaded = new Map<string, UploadedImageRef>();
 
@@ -126,7 +162,10 @@ export class PosterService {
             attempt += 1;
             options.onUploadProgress?.({ imageId: image.id, status: 'uploading', attempt });
             try {
-              const compressedFile = await compressImageIfNeeded(image.file, maxBytes);
+              const compressedFile = await compressImageIfNeeded(image.file, {
+                maxBytes,
+                mode: compressionMode
+              });
               const uploadTarget: ComicImage = compressedFile === image.file
                 ? image
                 : {

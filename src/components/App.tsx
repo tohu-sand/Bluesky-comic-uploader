@@ -105,6 +105,7 @@ export function App() {
         actions.setStep('post');
         try {
           const result = await service.postPlan(plan, {
+            compressionMode: useAppStore.getState().compressionMode,
             onUploadProgress: (payload) => actions.updateUploadProgress(payload.imageId, payload),
             onPostProgress: (payload) => actions.updatePostProgress(payload.postId, payload)
           });

@@ -1,6 +1,26 @@
-const DEFAULT_MAX_BYTES = 900_000;
+export const DEFAULT_MAX_BYTES = Math.round(0.95 * 1024 * 1024);
 
-export async function compressImageIfNeeded(file: File, maxBytes = DEFAULT_MAX_BYTES): Promise<File> {
+export type CompressionMode = 'balanced' | 'near-lossless';
+
+export interface CompressionOptions {
+  maxBytes?: number;
+  mode?: CompressionMode;
+}
+
+export async function compressImageIfNeeded(
+  file: File,
+  options?: number | CompressionOptions
+): Promise<File> {
+  let maxBytes = DEFAULT_MAX_BYTES;
+  let mode: CompressionMode = 'balanced';
+
+  if (typeof options === 'number') {
+    maxBytes = options;
+  } else if (options) {
+    maxBytes = options.maxBytes ?? maxBytes;
+    mode = options.mode ?? mode;
+  }
+
   if (file.size <= maxBytes) {
     return file;
   }
@@ -10,13 +30,43 @@ export async function compressImageIfNeeded(file: File, maxBytes = DEFAULT_MAX_B
   working.context.drawImage(bitmap, 0, 0);
   bitmap.close?.();
 
-  const targetType = file.type === 'image/png' ? 'image/png' : 'image/webp';
-  let quality = 0.92;
-  let blob = await blobFromCanvas(working.canvas, targetType, quality);
+  const targetType = mode === 'near-lossless'
+    ? 'image/jpeg'
+    : file.type === 'image/png'
+      ? 'image/png'
+      : 'image/webp';
 
-  while (blob.size > maxBytes && quality > 0.5) {
-    quality -= 0.05;
+  let blob: Blob;
+  let quality: number;
+
+  if (mode === 'near-lossless') {
+    quality = 1;
     blob = await blobFromCanvas(working.canvas, targetType, quality);
+    const minQuality = 0.7;
+    const qualityStep = 0.005;
+    let attempts = 0;
+
+    while (blob.size > maxBytes && quality > minQuality && attempts < 1000) {
+      attempts += 1;
+      const nextQuality = Math.max(minQuality, roundToStep(quality - qualityStep, 1000));
+      if (nextQuality === quality) {
+        break;
+      }
+      quality = nextQuality;
+      blob = await blobFromCanvas(working.canvas, targetType, quality);
+    }
+  } else {
+    quality = 0.92;
+    blob = await blobFromCanvas(working.canvas, targetType, quality);
+
+    while (blob.size > maxBytes && quality > 0.5) {
+      const nextQuality = Math.max(0.5, roundToStep(quality - 0.05, 100));
+      if (nextQuality === quality) {
+        break;
+      }
+      quality = nextQuality;
+      blob = await blobFromCanvas(working.canvas, targetType, quality);
+    }
   }
 
   while (blob.size > maxBytes && Math.min(working.canvas.width, working.canvas.height) > 512) {
@@ -76,6 +126,10 @@ async function blobFromCanvas(canvas: OffscreenCanvas | HTMLCanvasElement, type:
       quality
     );
   });
+}
+
+function roundToStep(value: number, scale: number) {
+  return Math.round(value * scale) / scale;
 }
 
 function getExtensionForType(type: string) {

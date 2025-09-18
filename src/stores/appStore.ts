@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ComicImage, PostPlan, ThreadResult, OAuthSession, SchedulerEntry } from '@modules/types';
+import type { CompressionMode } from '@modules/ingest/compression';
 import type { PlanOptions } from '@modules/poster/planner';
 import { buildPostPlan } from '@modules/poster/planner';
 import type { DPoPKeyPair } from '@modules/auth/dpop';
@@ -36,6 +37,7 @@ interface AppState {
   fallbackBody: string;
   altTemplate: string;
   altTemplateEnabled: boolean;
+  compressionMode: CompressionMode;
   threadResult: ThreadResult | null;
   uploadProgress: Record<string, UploadStatus>;
   postProgress: Record<string, PostStatus>;
@@ -52,6 +54,7 @@ interface AppState {
     setTemplate: (template: string, enabled: boolean) => void;
     setFallbackBody: (text: string) => void;
     setAltTemplate: (template: string, enabled?: boolean) => void;
+    setCompressionMode: (mode: CompressionMode) => void;
     rebuildPlan: () => void;
     buildPlanWithOptions: (options: Partial<PlanOptions>) => void;
     setThreadResult: (result: ThreadResult | null) => void;
@@ -82,6 +85,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   fallbackBody: '',
   altTemplate: defaultAltTemplate,
   altTemplateEnabled: true,
+  compressionMode: 'balanced',
   threadResult: null,
   uploadProgress: {},
   postProgress: {},
@@ -153,6 +157,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           altTemplateEnabled: nextEnabled
         };
       });
+    },
+    setCompressionMode(mode) {
+      set({ compressionMode: mode });
     },
     rebuildPlan() {
       const state = get();
@@ -231,6 +238,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           templateEnabled: true,
           altTemplate: defaultAltTemplate,
           altTemplateEnabled: true,
+          compressionMode: 'balanced',
           session: null,
           dpopKeyPair: null,
           appPasswordSession: null,

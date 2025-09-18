@@ -3,7 +3,16 @@ import { useAppStore } from '@stores/appStore';
 import { Button } from '@components/ui/Button';
 
 export function ComposeStep() {
-  const { postPlan, firstPostText, template, templateEnabled, altTemplate, altTemplateEnabled, actions } = useAppStore();
+  const {
+    postPlan,
+    firstPostText,
+    template,
+    templateEnabled,
+    altTemplate,
+    altTemplateEnabled,
+    compressionMode,
+    actions
+  } = useAppStore();
 
   const stats = useMemo(() => {
     if (!postPlan) return null;
@@ -84,6 +93,46 @@ export function ComposeStep() {
             className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
             placeholder="例: Page {i} of {n}\nCreator: {name}"
           />
+        </div>
+
+        <div className="grid gap-3 rounded-md bg-slate-950/40 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">画像品質</p>
+          </div>
+          <fieldset className="grid gap-3 text-xs text-slate-300">
+            <label className="flex flex-col gap-1 rounded-md border border-transparent bg-slate-950/30 px-3 py-2">
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="compression-mode"
+                  value="balanced"
+                  checked={compressionMode === 'balanced'}
+                  onChange={() => actions.setCompressionMode('balanced')}
+                  className="h-4 w-4 border-slate-600 bg-slate-950 text-sky-500"
+                />
+                <span className="text-sm text-slate-100">標準</span>
+              </span>
+              <span className="text-[11px] text-slate-500">
+                品質と解像度を調整して容量を抑えます。比較的短時間で投稿されます。
+              </span>
+            </label>
+            <label className="flex flex-col gap-1 rounded-md border border-transparent bg-slate-950/30 px-3 py-2">
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="compression-mode"
+                  value="near-lossless"
+                  checked={compressionMode === 'near-lossless'}
+                  onChange={() => actions.setCompressionMode('near-lossless')}
+                  className="h-4 w-4 border-slate-600 bg-slate-950 text-sky-500"
+                />
+                <span className="text-sm text-slate-100">なるべく高画質</span>
+              </span>
+              <span className="text-[11px] text-slate-500">
+                最小の圧縮でアップロードを試みます。投稿までに時間がかかる場合があります。
+              </span>
+            </label>
+          </fieldset>
         </div>
 
         {stats && (

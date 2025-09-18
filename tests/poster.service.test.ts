@@ -16,9 +16,13 @@ vi.mock('@modules/poster/api', () => ({
   }))
 }));
 
-vi.mock('@modules/ingest/compression', () => ({
-  compressImageIfNeeded: vi.fn(async (file: File) => file)
-}));
+vi.mock('@modules/ingest/compression', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@modules/ingest/compression')>();
+  return {
+    ...actual,
+    compressImageIfNeeded: vi.fn(async (file: File) => file)
+  };
+});
 
 import { uploadImageBlob, createFeedPost, type CreateRecordResponse } from '@modules/poster/api';
 import { PosterService } from '@modules/poster/service';
@@ -110,5 +114,30 @@ describe('PosterService', () => {
     await service.postPlan(plan);
 
     expect(uploadImageBlob).toHaveBeenCalledTimes(2);
+  });
+
+  it('includes aspect ratio when width and height are provided', async () => {
+    const service = new PosterService(authContext);
+    const imageWithDimensions: ComicImage = {
+      ...createImage('1', 0),
+      width: 2048,
+      height: 1536
+    };
+    const plan: PostPlan = {
+      entries: [{ id: '1', text: 'with dimensions', images: [imageWithDimensions] }],
+      totalPosts: 1,
+      totalImages: 1
+    };
+
+    await service.postPlan(plan);
+
+    const [firstCall] = vi.mocked(createFeedPost).mock.calls;
+    expect(firstCall).toBeDefined();
+    const record = firstCall?.[1] as {
+      record: {
+        embed: { images: Array<{ aspectRatio?: { width: number; height: number } }> };
+      };
+    } | undefined;
+    expect(record?.record.embed.images[0].aspectRatio).toEqual({ width: 4, height: 3 });
   });
 });
