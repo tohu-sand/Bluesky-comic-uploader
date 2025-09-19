@@ -3,7 +3,7 @@ import { useAppStore } from '@stores/appStore';
 import { Button } from '@components/ui/Button';
 
 export function PreviewStep() {
-  const { images, actions } = useAppStore();
+  const { images, firstPostSingleImage, actions } = useAppStore();
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [showOnlyActive, setShowOnlyActive] = useState(false);
 
@@ -48,6 +48,25 @@ export function PreviewStep() {
         </p>
       </header>
 
+      <div className="rounded-lg border border-sky-500/40 bg-sky-500/10 p-4 text-sm text-slate-100">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-base font-semibold text-slate-50">先頭ポストの画像を1枚にする</p>
+            <p className="mt-1 text-xs text-slate-200/80">
+              扉絵を強調したい場合などに便利です。
+            </p>
+          </div>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={firstPostSingleImage}
+              onChange={(event) => actions.setFirstPostSingleImage(event.target.checked)}
+              className="h-5 w-5 rounded border-slate-600 bg-slate-950 text-sky-500"
+            />
+          </label>
+        </div>
+      </div>
+
       {blankCandidates.length > 0 && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
           <p className="font-medium">白紙ページの可能性があるページを検出しました</p>
@@ -66,7 +85,7 @@ export function PreviewStep() {
         </div>
       )}
 
-      <div className="flex items-center justify-between text-xs text-slate-300">
+      <div className="flex flex-col gap-3 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between">
         <span>
           選択中: {activeImages.length}/{images.length} 枚
         </span>

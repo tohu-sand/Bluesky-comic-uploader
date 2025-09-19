@@ -32,6 +32,7 @@ interface AppState {
   images: ComicImage[];
   postPlan: PostPlan | null;
   firstPostText: string;
+  firstPostSingleImage: boolean;
   template: string;
   templateEnabled: boolean;
   fallbackBody: string;
@@ -51,6 +52,7 @@ interface AppState {
     setImages: (images: ComicImage[]) => void;
     markImagesRemoved: (ids: string[], removed: boolean) => void;
     setFirstPostText: (text: string) => void;
+    setFirstPostSingleImage: (value: boolean) => void;
     setTemplate: (template: string, enabled: boolean) => void;
     setFallbackBody: (text: string) => void;
     setAltTemplate: (template: string, enabled?: boolean) => void;
@@ -80,6 +82,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   images: [],
   postPlan: null,
   firstPostText: '',
+  firstPostSingleImage: false,
   template: '({i}/{n})',
   templateEnabled: true,
   fallbackBody: '',
@@ -129,6 +132,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       const { actions } = get();
       actions.rebuildPlan();
     },
+    setFirstPostSingleImage(value) {
+      set({ firstPostSingleImage: value });
+      const { actions } = get();
+      actions.rebuildPlan();
+    },
     setTemplate(template, enabled) {
       set({ template, templateEnabled: enabled });
       const { actions } = get();
@@ -172,7 +180,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         firstPostText,
         template,
         enableTemplate: templateEnabled,
-        fallbackText: fallbackBody
+        fallbackText: fallbackBody,
+        firstPostSingleImage: state.firstPostSingleImage
       });
       set({ postPlan: plan });
     },
@@ -182,7 +191,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         firstPostText: options.firstPostText ?? state.firstPostText,
         template: options.template ?? state.template,
         enableTemplate: options.enableTemplate ?? state.templateEnabled,
-        fallbackText: options.fallbackText ?? state.fallbackBody
+        fallbackText: options.fallbackText ?? state.fallbackBody,
+        firstPostSingleImage: options.firstPostSingleImage ?? state.firstPostSingleImage
       });
       set({ postPlan: plan });
     },
@@ -233,6 +243,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           uploadProgress: {},
           postProgress: {},
           firstPostText: '',
+          firstPostSingleImage: false,
           fallbackBody: '',
           template: '({i}/{n})',
           templateEnabled: true,

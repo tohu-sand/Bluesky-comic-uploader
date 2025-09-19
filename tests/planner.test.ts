@@ -70,4 +70,19 @@ describe('buildPostPlan', () => {
       ])
     );
   });
+
+  it('limits the first post to a single image when enabled', () => {
+    const images = Array.from({ length: 6 }, (_, index) => createImage(`img-${index}`, index));
+    const plan = buildPostPlan(images, {
+      firstPostText: 'Intro',
+      template: '({i}/{n})',
+      enableTemplate: true,
+      fallbackText: '',
+      firstPostSingleImage: true
+    });
+    expect(plan.entries[0]?.images).toHaveLength(1);
+    expect(plan.entries[1]?.images).toHaveLength(4);
+    expect(plan.entries[2]?.images).toHaveLength(1);
+    expect(plan.entries[0]?.text).toBe('Intro\n(1/3)');
+  });
 });

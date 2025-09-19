@@ -7,11 +7,16 @@ export interface PlanOptions {
   template?: string;
   enableTemplate: boolean;
   fallbackText?: string;
+  firstPostSingleImage?: boolean;
 }
 
 export function buildPostPlan(images: ComicImage[], options: PlanOptions): PostPlan {
   const usable = images.filter((image) => !image.markedForRemoval);
-  const chunks = chunkArray(usable, 4);
+  const [firstImage, ...remainingImages] = usable;
+  const firstPostSingle = options.firstPostSingleImage ?? false;
+  const chunks = firstPostSingle && firstImage
+    ? [[firstImage], ...chunkArray(remainingImages, 4)]
+    : chunkArray(usable, 4);
   const totalPosts = chunks.length;
   const entries = chunks.map((group, index) => {
     const templatedText = derivePostText({
