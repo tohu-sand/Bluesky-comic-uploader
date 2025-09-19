@@ -121,9 +121,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       actions.rebuildPlan();
     },
     markImagesRemoved(ids, removed) {
-      set((state) => ({
-        images: state.images.map((image) => (ids.includes(image.id) ? { ...image, markedForRemoval: removed } : image))
-      }));
+      set((state) => {
+        const nextImages = state.images.map((image) => {
+          const shouldUpdateRemoval = ids.includes(image.id);
+          if (shouldUpdateRemoval) {
+            return { ...image, markedForRemoval: removed };
+          }
+          return { ...image };
+        });
+        const templateToApply = state.altTemplateEnabled ? state.altTemplate : fallbackAltTemplate;
+        updateAltTexts(nextImages, templateToApply);
+        return { images: nextImages };
+      });
       const { actions } = get();
       actions.rebuildPlan();
     },
