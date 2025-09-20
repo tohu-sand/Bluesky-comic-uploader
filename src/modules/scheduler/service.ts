@@ -41,7 +41,9 @@ export class SchedulerService {
                 size: image.size,
                 type: image.type,
                 objectUrl: URL.createObjectURL(file),
-                altText: image.altText
+                altText: image.altText,
+                width: image.width,
+                height: image.height
               } satisfies ComicImage;
             })
           );

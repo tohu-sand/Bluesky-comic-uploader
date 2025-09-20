@@ -74,12 +74,15 @@ export interface ScheduledImage {
   size: number;
   altText: string;
   fileData: Blob;
+  width?: number;
+  height?: number;
 }
 
 export interface ScheduledGroup {
   id: string;
   text: string;
   images: ScheduledImage[];
+  facets?: AppBskyRichtextFacet.Main[];
 }
 
 export interface SchedulerEntry {

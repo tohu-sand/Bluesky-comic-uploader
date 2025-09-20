@@ -16,6 +16,7 @@ import type { AuthContext } from '@modules/auth/context';
 import { PosterService } from '@modules/poster/service';
 import { SchedulerService } from '@modules/scheduler/service';
 import { listSchedulerEntries, deleteSchedulerEntry } from '@modules/scheduler/storage';
+import { ensureFreshAuthContext } from '@modules/auth/refresh';
 
 const PERSIST_KEY = 'bsky_persist_tokens';
 
@@ -47,6 +48,12 @@ export function App() {
 
   useEffect(() => {
     setMemorySession(session, dpopKeyPair ?? null);
+  }, [session, dpopKeyPair]);
+
+  useEffect(() => {
+    if (session && dpopKeyPair && localStorage.getItem(PERSIST_KEY) === 'true') {
+      void persistSession(session, dpopKeyPair);
+    }
   }, [session, dpopKeyPair]);
 
   useEffect(() => {
@@ -90,21 +97,42 @@ export function App() {
     if (!authContext) return;
     if (!schedulerRef.current) {
       schedulerRef.current = new SchedulerService(async (entry, imageGroups) => {
-        const plan = {
-          entries: entry.groups.map((group, index) => ({
-            id: group.id ?? String(index + 1),
-            text: group.text,
-            images: imageGroups[index] ?? []
-          })),
-          totalPosts: entry.groups.length,
-          totalImages: imageGroups.reduce((sum, group) => sum + group.length, 0)
-        };
-        const service = new PosterService(authContext);
-        actions.setSchedulerEnabled(false);
-        actions.setScheduledAt(null);
-        actions.resetProgress();
-        actions.setStep('post');
         try {
+          const state = useAppStore.getState();
+          const refreshed = await ensureFreshAuthContext({
+            session: state.session,
+            dpopKeyPair: state.dpopKeyPair,
+            oauthConfig: state.oauthConfig,
+            appPasswordSession: state.appPasswordSession
+          });
+          if (!refreshed.context) {
+            throw new Error('Authentication context is unavailable for scheduled posting.');
+          }
+          if (refreshed.refreshed) {
+            if (refreshed.session) {
+              if (!state.dpopKeyPair) {
+                throw new Error('Missing DPoP key pair while refreshing OAuth session.');
+              }
+              state.actions.setSession(refreshed.session, state.dpopKeyPair, state.oauthConfig ?? undefined);
+            } else if (refreshed.appPasswordSession) {
+              state.actions.setAppPasswordSession(refreshed.appPasswordSession);
+            }
+          }
+          const plan = {
+            entries: entry.groups.map((group, index) => ({
+              id: group.id ?? String(index + 1),
+              text: group.text,
+              images: imageGroups[index] ?? [],
+              ...(group.facets ? { facets: group.facets } : {})
+            })),
+            totalPosts: entry.groups.length,
+            totalImages: imageGroups.reduce((sum, group) => sum + group.length, 0)
+          };
+          const service = new PosterService(refreshed.context);
+          actions.setSchedulerEnabled(false);
+          actions.setScheduledAt(null);
+          actions.resetProgress();
+          actions.setStep('post');
           const result = await service.postPlan(plan, {
             compressionMode: useAppStore.getState().compressionMode,
             onUploadProgress: (payload) => actions.updateUploadProgress(payload.imageId, payload),

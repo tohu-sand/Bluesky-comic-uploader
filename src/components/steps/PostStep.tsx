@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '@stores/appStore';
 import { Button } from '@components/ui/Button';
 import { PosterService } from '@modules/poster/service';
-import type { AuthContext } from '@modules/auth/context';
 import type { OAuthSession, ComicImage, ScheduledGroup, ScheduledImage, SchedulerEntry, PostPlan } from '@modules/types';
 import type { DPoPKeyPair } from '@modules/auth/dpop';
 import type { AppPasswordSession } from '@modules/auth/appPassword';
 import { putSchedulerEntry, listSchedulerEntries, deleteSchedulerEntry } from '@modules/scheduler/storage';
+import type { OAuthConfig } from '@modules/auth/oauth';
+import { ensureFreshAuthContext } from '@modules/auth/refresh';
+
+type AppActions = ReturnType<typeof useAppStore>['actions'];
 
 export function PostStep() {
   const {
@@ -14,6 +17,7 @@ export function PostStep() {
     session,
     dpopKeyPair,
     appPasswordSession,
+    oauthConfig,
     compressionMode,
     uploadProgress,
     postProgress,
@@ -26,8 +30,6 @@ export function PostStep() {
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<'error' | 'success' | null>(null);
   const [reservationQueued, setReservationQueued] = useState(() => schedulerEntries.length > 0);
-
-  const authContext = buildAuthContext(session, dpopKeyPair, appPasswordSession);
 
   const startPosting = async () => {
     if (!postPlan) {
@@ -78,7 +80,14 @@ export function PostStep() {
       return;
     }
 
-    if (!authContext) {
+    const latestContext = await prepareAuthContext({
+      session,
+      dpopKeyPair,
+      appPasswordSession,
+      oauthConfig,
+      actions
+    });
+    if (!latestContext) {
       setMessage('ログイン情報が無効です。もう一度接続し直してください。');
       setMessageTone('error');
       return;
@@ -87,7 +96,7 @@ export function PostStep() {
     setMessage(null);
     setMessageTone(null);
     actions.resetProgress();
-    const service = new PosterService(authContext);
+    const service = new PosterService(latestContext);
 
     try {
       const result = await service.postPlan(postPlan, {
@@ -253,7 +262,8 @@ function buildSchedulerEntry(
   const groups: ScheduledGroup[] = plan.entries.map((entry) => ({
       id: entry.id,
       text: entry.text,
-      images: entry.images.map(toScheduledImage)
+      images: entry.images.map(toScheduledImage),
+      ...(entry.facets ? { facets: entry.facets } : {})
     }));
   return {
     id: crypto.randomUUID(),
@@ -271,26 +281,35 @@ function toScheduledImage(image: ComicImage): ScheduledImage {
     type: image.type,
     size: image.size,
     altText: image.altText,
-    fileData: image.file
+    fileData: image.file,
+    width: image.width,
+    height: image.height
   };
 }
 
-function buildAuthContext(
-  session: OAuthSession | null,
-  dpopKeyPair: DPoPKeyPair | null,
-  appPasswordSession: AppPasswordSession | null
-): AuthContext | null {
-  if (session && dpopKeyPair) {
-    return { type: 'oauth', session, dpopKeyPair };
+async function prepareAuthContext(params: {
+  session: OAuthSession | null;
+  dpopKeyPair: DPoPKeyPair | null;
+  appPasswordSession: AppPasswordSession | null;
+  oauthConfig: OAuthConfig | null;
+  actions: AppActions;
+}) {
+  const { session, dpopKeyPair, appPasswordSession, oauthConfig, actions } = params;
+  const result = await ensureFreshAuthContext({ session, dpopKeyPair, oauthConfig, appPasswordSession });
+
+  if (!result.context) {
+    return null;
   }
-  if (appPasswordSession) {
-    return {
-      type: 'app-password',
-      service: appPasswordSession.service,
-      did: appPasswordSession.did,
-      accessJwt: appPasswordSession.accessJwt,
-      refreshJwt: appPasswordSession.refreshJwt
-    };
+
+  if (result.refreshed) {
+    if (result.session && dpopKeyPair) {
+      actions.setSession(result.session, dpopKeyPair, oauthConfig ?? undefined);
+    } else if (result.appPasswordSession) {
+      actions.setAppPasswordSession(result.appPasswordSession);
+    } else {
+      throw new Error('Failed to refresh authentication context.');
+    }
   }
-  return null;
+
+  return result.context;
 }

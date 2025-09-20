@@ -174,6 +174,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           altTemplateEnabled: nextEnabled
         };
       });
+      const { actions } = get();
+      actions.rebuildPlan();
     },
     setCompressionMode(mode) {
       set({ compressionMode: mode });
